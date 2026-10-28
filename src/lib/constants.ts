@@ -73,3 +73,7 @@ export const REVIEW_ADVICE_MAX = 1000;
 export const LOW_CONFIDENCE_THRESHOLD = 5;
 export const MAX_COMPARE = 3;
 export const PAGE_SIZE = 12;
+
+export const USER_ROLES = ["student", "moderator", "admin"] as const satisfies readonly Enums<"user_role">[];
+export type UserRole = (typeof USER_ROLES)[number];
+export const TERM_SEASONS = ["spring", "summer", "fall", "winter"] as const satisfies readonly Enums<"term_season">[];
