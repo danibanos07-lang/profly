@@ -296,3 +296,15 @@ export async function getProfessorsByIds(ids: string[]) {
   const { data } = await supabase.from("professor_directory").select("*").in("id", ids);
   return asProfessors(data);
 }
+
+export async function isBookmarked(target: { professorId?: string; courseId?: string }) {
+  const supabase = await getSupabase();
+  if (!supabase) return false;
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return false;
+  let query = supabase.from("bookmarks").select("id").eq("user_id", auth.user.id);
+  if (target.professorId) query = query.eq("professor_id", target.professorId);
+  if (target.courseId) query = query.eq("course_id", target.courseId);
+  const { data } = await query.maybeSingle();
+  return Boolean(data);
+}
