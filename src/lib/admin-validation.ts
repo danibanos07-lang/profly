@@ -66,7 +66,7 @@ export const courseFormSchema = z
     department_id: optionalUuid,
     description: optionalText(4000),
     credits: z
-      .union([z.coerce.number().min(0).max(40), z.literal("")])
+      .union([z.literal(""), z.coerce.number().min(0).max(40)])
       .nullish()
       .transform((v) => (v === "" || v == null ? null : v)),
     recommended_knowledge: optionalText(2000),

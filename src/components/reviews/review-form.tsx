@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, useTransition } from "react";
+import { useId, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Check, Loader2, Lock, UserRound, X } from "lucide-react";
@@ -233,21 +233,23 @@ export function ReviewForm({
 
   const set = <K extends keyof ReviewFormValues>(key: K, value: ReviewFormValues[K]) => setValues((v) => ({ ...v, [key]: value }));
 
+  // Picking a course also defaults the campus to the assignment's campus.
+  function chooseCombo(id: string, list: ComboOption[] = combos) {
+    const combo = list.find((c) => c.id === id);
+    const campusId = combo?.campus_id && campuses.some((c) => c.id === combo.campus_id) ? combo.campus_id : null;
+    setValues((v) => ({ ...v, professor_course_id: id, ...(campusId ? { campus_id: campusId } : {}) }));
+  }
+
   function pickProfessor(p: { id: string; name: string }) {
     setProfessor(p);
     set("professor_course_id", "");
     startLoadingCombos(async () => {
       const result = await fetchCombos({ professorId: p.id });
       setCombos(result);
-      if (result.length === 1) set("professor_course_id", result[0].id);
+      if (result.length === 1) chooseCombo(result[0].id, result);
     });
   }
 
-  // Default the campus to the assignment's campus when picking a course.
-  useEffect(() => {
-    const combo = combos.find((c) => c.id === values.professor_course_id);
-    if (combo?.campus_id && campuses.some((c) => c.id === combo.campus_id)) setValues((v) => ({ ...v, campus_id: combo.campus_id! }));
-  }, [values.professor_course_id, combos, campuses]);
 
   const errorText = (key?: string) => {
     if (!key) return undefined;
@@ -390,7 +392,7 @@ export function ReviewForm({
                             setProfessor({ id: c.professor_id, name: c.professor_name });
                             startLoadingCombos(async () => {
                               setCombos(await fetchCombos({ professorId: c.professor_id }));
-                              set("professor_course_id", c.id);
+                              chooseCombo(c.id);
                             });
                           }}
                           className="cursor-pointer rounded-full border bg-card px-3 py-1.5 text-sm shadow-soft hover:border-primary/40 hover:text-primary"
@@ -411,7 +413,7 @@ export function ReviewForm({
                 value={values.professor_course_id}
                 disabled={!professor || loadingCombos}
                 aria-invalid={Boolean(errors.professor_course_id)}
-                onChange={(e) => set("professor_course_id", e.target.value)}
+                onChange={(e) => chooseCombo(e.target.value)}
               >
                 <option value="">{professor ? t.reviewForm.coursePlaceholder : t.reviewForm.selectProfessorFirst}</option>
                 {combos.map((c) => (

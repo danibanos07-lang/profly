@@ -32,7 +32,10 @@ export default async function NewReviewPage({ searchParams }: PageProps<"/review
   const values = emptyValues(user.campusId ?? options?.defaultCampusId ?? "", options?.defaultTermId ?? "");
   if (professor) {
     const preselected = course ? initialCombos.find((c) => c.course_id === course.id) : initialCombos.length === 1 ? initialCombos[0] : undefined;
-    if (preselected) values.professor_course_id = preselected.id;
+    if (preselected) {
+      values.professor_course_id = preselected.id;
+      if (preselected.campus_id && options?.campuses.some((c) => c.id === preselected.campus_id)) values.campus_id = preselected.campus_id;
+    }
   }
 
   return (

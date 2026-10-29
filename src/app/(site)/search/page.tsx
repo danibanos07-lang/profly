@@ -281,11 +281,13 @@ export default async function SearchPage({ searchParams }: PageProps<"/search">)
               )}
             </nav>
           )}
-          <p className="mt-8 text-center text-sm">
-            <Link href="/suggest" className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-              {t.search.suggestMissing}
-            </Link>
-          </p>
+          {items.length > 0 && (
+            <p className="mt-8 text-center text-sm">
+              <Link href="/suggest" className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+                {t.search.suggestMissing}
+              </Link>
+            </p>
+          )}
         </section>
       </div>
     </div>

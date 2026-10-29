@@ -8,7 +8,7 @@ export function SetupNotice({ t }: { t: Dictionary }) {
       <Database />
       <AlertTitle>{t.setup.title}</AlertTitle>
       <AlertDescription>
-        <p>{t.setup.body}</p>
+        <p className="break-words [overflow-wrap:anywhere]">{t.setup.body}</p>
       </AlertDescription>
     </Alert>
   );

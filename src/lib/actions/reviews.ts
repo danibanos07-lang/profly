@@ -39,6 +39,7 @@ export async function submitReview(input: ReviewInput): Promise<ActionResult<{ i
 
   const parsed = reviewSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalidInput", fields: fieldErrors(parsed.error) };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { accepts_guidelines: _accepted, ...payload } = parsed.data;
 
   const { data: id, error } = await ctx.supabase.rpc("submit_review", { payload: payload as unknown as Json });
@@ -54,6 +55,7 @@ export async function updateReview(reviewId: string, input: ReviewInput): Promis
   if (!ctx.ok) return { ok: false, error: ctx.error };
   const parsed = reviewSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "invalidInput", fields: fieldErrors(parsed.error) };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { accepts_guidelines: _accepted, ...payload } = parsed.data;
 
   const { data: existing } = await ctx.supabase

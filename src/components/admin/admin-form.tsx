@@ -51,7 +51,9 @@ export function AdminForm({
   const [state, formAction] = useActionState(action, undefined);
   const formRef = useRef<HTMLFormElement>(null);
   const onResultRef = useRef(onResult);
-  onResultRef.current = onResult;
+  useEffect(() => {
+    onResultRef.current = onResult;
+  });
 
   useEffect(() => {
     if (!state) return;
