@@ -66,6 +66,9 @@ export const reviewSchema = z.object({
     organization: score,
     satisfaction: score,
   }),
+  // Optional self-reported final grade. The database checks it against the
+  // university's grading scale; it is stored apart from the review.
+  final_grade: z.coerce.number().min(0).max(1000).nullable().optional().transform((v) => v ?? null),
   accepts_guidelines: z.literal(true),
 });
 export type ReviewInput = z.input<typeof reviewSchema>;
@@ -158,3 +161,19 @@ export function fieldErrors(error: z.ZodError) {
   }
   return out;
 }
+
+const optionalUuid = z.uuid().nullable().optional().transform((v) => v ?? null);
+
+export const academicProfileSchema = z.object({
+  university_id: optionalUuid,
+  campus_id: optionalUuid,
+  program_id: optionalUuid,
+  curriculum_id: optionalUuid,
+  current_semester: z.number().int().min(1).max(20).nullable().optional().transform((v) => v ?? null),
+  start_year: z.number().int().min(1950).max(2100).nullable().optional().transform((v) => v ?? null),
+});
+
+export const courseRecordSchema = z.object({
+  course_id: z.uuid(),
+  status: z.enum(["completed", "in_progress", "failed", "withdrawn"]),
+});

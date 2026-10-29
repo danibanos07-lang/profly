@@ -77,3 +77,6 @@ export const PAGE_SIZE = 12;
 export const USER_ROLES = ["student", "moderator", "admin"] as const satisfies readonly Enums<"user_role">[];
 export type UserRole = (typeof USER_ROLES)[number];
 export const TERM_SEASONS = ["spring", "summer", "fall", "winter"] as const satisfies readonly Enums<"term_season">[];
+
+/** Minimum number of self-reported grades before an average is shown (mirrors public.grade_min_sample()). */
+export const GRADE_MIN_SAMPLE = 5;

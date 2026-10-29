@@ -260,6 +260,8 @@ export type Database = {
           verified_by: string | null
           verified_at: string | null
           created_at: string
+          relation: string
+          curriculum_id: string | null
         }
         Insert: {
           id?: string
@@ -271,6 +273,8 @@ export type Database = {
           verified_by?: string | null
           verified_at?: string | null
           created_at?: string
+          relation?: string
+          curriculum_id?: string | null
         }
         Update: {
           id?: string
@@ -282,6 +286,8 @@ export type Database = {
           verified_by?: string | null
           verified_at?: string | null
           created_at?: string
+          relation?: string
+          curriculum_id?: string | null
         }
         Relationships: [
           {
@@ -289,6 +295,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_prerequisites_curriculum_id_fkey"
+            columns: ["curriculum_id"]
+            isOneToOne: false
+            referencedRelation: "curricula"
             referencedColumns: ["id"]
           },
           {
@@ -493,6 +506,158 @@ export type Database = {
           },
           {
             foreignKeyName: "courses_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curricula: {
+        Row: {
+          id: string
+          program_id: string
+          version_label: string
+          first_entry_year: number | null
+          last_entry_year: number | null
+          total_semesters: number | null
+          is_official: boolean
+          source_url: string | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          program_id: string
+          version_label: string
+          first_entry_year?: number | null
+          last_entry_year?: number | null
+          total_semesters?: number | null
+          is_official?: boolean
+          source_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          program_id?: string
+          version_label?: string
+          first_entry_year?: number | null
+          last_entry_year?: number | null
+          total_semesters?: number | null
+          is_official?: boolean
+          source_url?: string | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curricula_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "degree_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      curriculum_courses: {
+        Row: {
+          id: string
+          curriculum_id: string
+          course_id: string
+          semester: number | null
+          requirement: Database["public"]["Enums"]["curriculum_requirement"]
+          group_label: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          curriculum_id: string
+          course_id: string
+          semester?: number | null
+          requirement?: Database["public"]["Enums"]["curriculum_requirement"]
+          group_label?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          curriculum_id?: string
+          course_id?: string
+          semester?: number | null
+          requirement?: Database["public"]["Enums"]["curriculum_requirement"]
+          group_label?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_courses_curriculum_id_fkey"
+            columns: ["curriculum_id"]
+            isOneToOne: false
+            referencedRelation: "curricula"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      degree_programs: {
+        Row: {
+          id: string
+          university_id: string
+          department_id: string | null
+          slug: string
+          code: string | null
+          name: string
+          name_en: string | null
+          is_fictional: boolean
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          university_id: string
+          department_id?: string | null
+          slug: string
+          code?: string | null
+          name: string
+          name_en?: string | null
+          is_fictional?: boolean
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          university_id?: string
+          department_id?: string | null
+          slug?: string
+          code?: string | null
+          name?: string
+          name_en?: string | null
+          is_fictional?: boolean
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "degree_programs_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "degree_programs_university_id_fkey"
             columns: ["university_id"]
             isOneToOne: false
             referencedRelation: "universities"
@@ -924,6 +1089,10 @@ export type Database = {
           banned_reason: string | null
           created_at: string
           updated_at: string
+          program_id: string | null
+          curriculum_id: string | null
+          current_semester: number | null
+          start_year: number | null
         }
         Insert: {
           id: string
@@ -937,6 +1106,10 @@ export type Database = {
           banned_reason?: string | null
           created_at?: string
           updated_at?: string
+          program_id?: string | null
+          curriculum_id?: string | null
+          current_semester?: number | null
+          start_year?: number | null
         }
         Update: {
           id?: string
@@ -950,6 +1123,10 @@ export type Database = {
           banned_reason?: string | null
           created_at?: string
           updated_at?: string
+          program_id?: string | null
+          curriculum_id?: string | null
+          current_semester?: number | null
+          start_year?: number | null
         }
         Relationships: [
           {
@@ -960,10 +1137,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "profiles_curriculum_id_fkey"
+            columns: ["curriculum_id"]
+            isOneToOne: false
+            referencedRelation: "curricula"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "degree_programs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profiles_university_id_fkey"
             columns: ["university_id"]
             isOneToOne: false
             referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      program_campuses: {
+        Row: {
+          program_id: string
+          campus_id: string
+        }
+        Insert: {
+          program_id: string
+          campus_id: string
+        }
+        Update: {
+          program_id?: string
+          campus_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "program_campuses_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "program_campuses_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "degree_programs"
             referencedColumns: ["id"]
           },
         ]
@@ -989,6 +1210,35 @@ export type Database = {
         }
         Relationships: [
 
+        ]
+      }
+      reported_grades: {
+        Row: {
+          review_id: string
+          grade: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          review_id: string
+          grade: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          review_id?: string
+          grade?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reported_grades_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: true
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
         ]
       }
       review_reports: {
@@ -1285,6 +1535,58 @@ export type Database = {
           },
         ]
       }
+      student_course_records: {
+        Row: {
+          id: string
+          user_id: string
+          course_id: string
+          status: Database["public"]["Enums"]["course_record_status"]
+          term_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          course_id: string
+          status: Database["public"]["Enums"]["course_record_status"]
+          term_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          course_id?: string
+          status?: Database["public"]["Enums"]["course_record_status"]
+          term_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_course_records_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_course_records_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "academic_terms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_course_records_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suggestions: {
         Row: {
           id: string
@@ -1346,6 +1648,68 @@ export type Database = {
           },
         ]
       }
+      teaching_assignments: {
+        Row: {
+          id: string
+          professor_id: string
+          course_id: string
+          term_id: string
+          campus_id: string | null
+          section_code: string | null
+          source: Database["public"]["Enums"]["teaching_source"]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          professor_id: string
+          course_id: string
+          term_id: string
+          campus_id?: string | null
+          section_code?: string | null
+          source?: Database["public"]["Enums"]["teaching_source"]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          professor_id?: string
+          course_id?: string
+          term_id?: string
+          campus_id?: string | null
+          section_code?: string | null
+          source?: Database["public"]["Enums"]["teaching_source"]
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teaching_assignments_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teaching_assignments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teaching_assignments_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "professors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teaching_assignments_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "academic_terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       universities: {
         Row: {
           id: string
@@ -1359,6 +1723,9 @@ export type Database = {
           is_active: boolean
           created_at: string
           updated_at: string
+          grade_scale_min: number
+          grade_scale_max: number
+          grade_scale_step: number
         }
         Insert: {
           id?: string
@@ -1372,6 +1739,9 @@ export type Database = {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+          grade_scale_min?: number
+          grade_scale_max?: number
+          grade_scale_step?: number
         }
         Update: {
           id?: string
@@ -1385,9 +1755,98 @@ export type Database = {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+          grade_scale_min?: number
+          grade_scale_max?: number
+          grade_scale_step?: number
         }
         Relationships: [
 
+        ]
+      }
+      university_auth_methods: {
+        Row: {
+          id: string
+          university_id: string
+          method: Database["public"]["Enums"]["auth_method_kind"]
+          sso_provider_id: string | null
+          is_enabled: boolean
+          is_required: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          university_id: string
+          method: Database["public"]["Enums"]["auth_method_kind"]
+          sso_provider_id?: string | null
+          is_enabled?: boolean
+          is_required?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          university_id?: string
+          method?: Database["public"]["Enums"]["auth_method_kind"]
+          sso_provider_id?: string | null
+          is_enabled?: boolean
+          is_required?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_auth_methods_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      university_email_domains: {
+        Row: {
+          id: string
+          university_id: string
+          domain: string
+          campus_id: string | null
+          include_subdomains: boolean
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          university_id: string
+          domain: string
+          campus_id?: string | null
+          include_subdomains?: boolean
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          university_id?: string
+          domain?: string
+          campus_id?: string | null
+          include_subdomains?: boolean
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_email_domains_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "university_email_domains_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -1433,6 +1892,16 @@ export type Database = {
         }
         Relationships: []
       }
+      course_grade_summary: {
+        Row: {
+          course_id: string | null
+          grade_count: number | null
+          avg_grade: number | null
+          grade_scale_min: number | null
+          grade_scale_max: number | null
+        }
+        Relationships: []
+      }
       professor_course_directory: {
         Row: {
           id: string | null
@@ -1463,6 +1932,18 @@ export type Database = {
           would_take_again_pct: number | null
           recommend_pct: number | null
           last_review_at: string | null
+        }
+        Relationships: []
+      }
+      professor_course_grade_summary: {
+        Row: {
+          professor_course_id: string | null
+          professor_id: string | null
+          course_id: string | null
+          grade_count: number | null
+          avg_grade: number | null
+          grade_scale_min: number | null
+          grade_scale_max: number | null
         }
         Relationships: []
       }
@@ -1501,6 +1982,7 @@ export type Database = {
           last_review_at: string | null
           course_count: number | null
           search_text: string | null
+          courses_taught: Json | null
         }
         Relationships: []
       }
@@ -1702,6 +2184,10 @@ export type Database = {
         Args: never
         Returns: undefined
       }
+      grade_min_sample: {
+        Args: never
+        Returns: number
+      }
       is_admin: {
         Args: never
         Returns: boolean
@@ -1717,6 +2203,27 @@ export type Database = {
           p_reason?: string
         }
         Returns: undefined
+      }
+      my_next_semester: {
+        Args: never
+        Returns: {
+            course_id: string
+            slug: string
+            code: string
+            name: string
+            planned_semester: number
+            requirement: Database["public"]["Enums"]["curriculum_requirement"]
+            group_label: string
+            is_catch_up: boolean
+            missing_prerequisites: string[]
+            avg_difficulty: number
+            avg_workload: number
+            avg_weekly_hours: number
+            review_count: number
+            reviewed_professor_count: number
+            avg_grade: number
+            grade_count: number
+          }[]
       }
       normalize_search: {
         Args: {
@@ -1813,6 +2320,13 @@ export type Database = {
             score: number
           }[]
       }
+      set_review_grade: {
+        Args: {
+          p_review_id: string
+          p_grade: number
+        }
+        Returns: undefined
+      }
       submit_review: {
         Args: {
           payload: Json
@@ -1829,7 +2343,10 @@ export type Database = {
     }
     Enums: {
       attendance_policy: "mandatory" | "counts_toward_grade" | "optional"
+      auth_method_kind: "email_password" | "email_magic_link" | "google" | "saml_sso" | "oidc_sso"
       correction_status: "open" | "resolved" | "rejected"
+      course_record_status: "completed" | "in_progress" | "failed" | "withdrawn"
+      curriculum_requirement: "required" | "elective" | "concentration"
       homework_frequency: "none" | "occasional" | "weekly" | "several_per_week"
       report_reason: "harassment" | "hate_speech" | "threat" | "personal_info" | "false_information" | "spam" | "off_topic" | "other"
       report_status: "open" | "dismissed" | "actioned"
@@ -1837,6 +2354,7 @@ export type Database = {
       suggestion_kind: "professor" | "course" | "assignment" | "prerequisite"
       suggestion_status: "pending" | "approved" | "rejected"
       teaching_format: "in_person" | "online" | "hybrid"
+      teaching_source: "official" | "admin" | "student_report"
       teamwork_level: "none" | "some" | "frequent"
       term_season: "spring" | "summer" | "fall" | "winter"
       user_role: "student" | "moderator" | "admin"
@@ -1859,7 +2377,10 @@ export const Constants = {
   public: {
     Enums: {
       attendance_policy: ["mandatory","counts_toward_grade","optional"],
+      auth_method_kind: ["email_password","email_magic_link","google","saml_sso","oidc_sso"],
       correction_status: ["open","resolved","rejected"],
+      course_record_status: ["completed","in_progress","failed","withdrawn"],
+      curriculum_requirement: ["required","elective","concentration"],
       homework_frequency: ["none","occasional","weekly","several_per_week"],
       report_reason: ["harassment","hate_speech","threat","personal_info","false_information","spam","off_topic","other"],
       report_status: ["open","dismissed","actioned"],
@@ -1867,6 +2388,7 @@ export const Constants = {
       suggestion_kind: ["professor","course","assignment","prerequisite"],
       suggestion_status: ["pending","approved","rejected"],
       teaching_format: ["in_person","online","hybrid"],
+      teaching_source: ["official","admin","student_report"],
       teamwork_level: ["none","some","frequent"],
       term_season: ["spring","summer","fall","winter"],
       user_role: ["student","moderator","admin"],

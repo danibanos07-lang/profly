@@ -17,6 +17,9 @@ const EXAMPLES: Record<ImportKind, string> = {
   professors: "first_name,last_name,honorific,department_slug,campus_slug,slug\n",
   courses: "code,name,name_language,department_slug,credits,description\n",
   assignments: "professor_slug,course_code,campus_slug\n",
+  teaching: "professor_slug,course_code,term,campus_slug,section,source\n",
+  programs: "name,slug,code,name_en,department_slug,campus_slugs\n",
+  curriculum: "program_slug,version,course_code,semester,requirement,group,source_url\n",
 };
 
 export function ImportForm({ universityId }: { universityId: string }) {

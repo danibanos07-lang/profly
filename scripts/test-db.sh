@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-DB="${TEST_DB_NAME:-unirate_test}"
+DB="${TEST_DB_NAME:-kurso_test}"
 PSQL=(psql -v ON_ERROR_STOP=1 -q -X)
 
 "${PSQL[@]}" -d postgres -c "drop database if exists ${DB}" -c "create database ${DB}"

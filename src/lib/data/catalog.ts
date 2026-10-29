@@ -41,20 +41,23 @@ export const getUniversityContext = cache(async (slug: string = env.defaultUnive
 export async function getHomeData() {
   const supabase = await getSupabase();
   if (!supabase) return null;
-  const [trending, topProfessors, courses, recent, professorCount, courseCount, reviewCount] = await Promise.all([
-    supabase.from("trending_professors").select("*").order("recent_reviews", { ascending: false }).order("avg_overall", { ascending: false }).limit(6),
-    supabase.from("professor_directory").select("*").order("review_count", { ascending: false }).limit(6),
+  const [professors, courses, professorCount, courseCount, reviewCount] = await Promise.all([
+    // Best rated among professors with a meaningful number of reviews.
+    supabase
+      .from("professor_directory")
+      .select("*")
+      .gte("review_count", 3)
+      .order("avg_overall", { ascending: false, nullsFirst: false })
+      .order("review_count", { ascending: false })
+      .limit(6),
     supabase.from("course_directory").select("*").order("review_count", { ascending: false }).limit(6),
-    supabase.from("review_feed").select("*").order("created_at", { ascending: false }).limit(6),
     supabase.from("professor_directory").select("id", { count: "exact", head: true }),
     supabase.from("course_directory").select("id", { count: "exact", head: true }),
     supabase.from("review_feed").select("id", { count: "exact", head: true }),
   ]);
-  const trendingRows = asProfessors(trending.data);
   return {
-    trending: trendingRows.length ? trendingRows : asProfessors(topProfessors.data),
+    professors: asProfessors(professors.data),
     courses: asCourses(courses.data),
-    recent: asReviews(recent.data),
     counts: {
       professors: professorCount.count ?? 0,
       courses: courseCount.count ?? 0,
@@ -308,3 +311,39 @@ export async function isBookmarked(target: { professorId?: string; courseId?: st
   const { data } = await query.maybeSingle();
   return Boolean(data);
 }
+
+export type GradeSummary = {
+  grade_count: number;
+  /** Null until the group reaches GRADE_MIN_SAMPLE grades. */
+  avg_grade: number | null;
+  grade_scale_min: number;
+  grade_scale_max: number;
+};
+
+const asGrade = (row: { grade_count: number | null; avg_grade: number | null; grade_scale_min: number | null; grade_scale_max: number | null }): GradeSummary => ({
+  grade_count: row.grade_count ?? 0,
+  avg_grade: row.avg_grade,
+  grade_scale_min: row.grade_scale_min ?? 0,
+  grade_scale_max: row.grade_scale_max ?? 100,
+});
+
+/** Thresholded, anonymous grade average for a course (null when nobody reported one). */
+export const getCourseGrades = cache(async (courseId: string): Promise<GradeSummary | null> => {
+  const supabase = await getSupabase();
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("course_grade_summary").select("*").eq("course_id", courseId).maybeSingle();
+  if (error) console.error("course_grade_summary", error.message);
+  return data ? asGrade(data) : null;
+});
+
+/** Grade averages per professor-course, keyed by professor_course_id. */
+export const getComboGrades = cache(async (by: "course" | "professor", id: string): Promise<Record<string, GradeSummary>> => {
+  const supabase = await getSupabase();
+  if (!supabase) return {};
+  const { data, error } = await supabase
+    .from("professor_course_grade_summary")
+    .select("*")
+    .eq(by === "course" ? "course_id" : "professor_id", id);
+  if (error) console.error("professor_course_grade_summary", error.message);
+  return Object.fromEntries((data ?? []).filter((row) => row.professor_course_id).map((row) => [row.professor_course_id as string, asGrade(row)]));
+});

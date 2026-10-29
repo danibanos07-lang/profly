@@ -1,10 +1,10 @@
-# UniRate
+# Kurso
 
 Anonymous student reviews of university professors and courses. It starts with Tecnológico de Monterrey, Campus Santa Fe, and is built to take more campuses and universities without schema changes.
 
-Stack: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn-style components on Radix, Supabase (Postgres, Auth, Row Level Security), Lucide icons. It deploys to Vercel.
+Stack: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn-style components on Radix, Supabase (Postgres, Auth, Row Level Security), Lucide icons. It deploys to Netlify (any Next.js host works).
 
-> **Status:** Phase 1 (MVP) plus most of Phases 2 and 3 are implemented. The database layer is tested against PostgreSQL. **No Supabase project is connected yet**: see [What you still need to provide](#what-you-still-need-to-provide).
+> **Status:** Phases 1–3 are implemented, plus the Kurso redesign: a minimal interface, anonymous self-reported grades, student academic profiles and the data model for future university integrations. The database layer is tested against PostgreSQL. The app deploys to Netlify from `main`.
 
 ---
 
@@ -63,6 +63,32 @@ Stack: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, shadcn-st
 - Spanish by default, English available (cookie-based switcher, browser language detection).
 - Light and dark themes, responsive down to 360 px, keyboard accessible, ARIA combobox search.
 - Community guidelines, privacy notice, and a correction-request form for professors.
+
+## What works now vs. what is prepared
+
+**Works now**
+- Minimal, responsive search-first homepage ("Find your professor or course").
+- Professor profiles lead with name, overall rating and the courses they teach. Each course links to that professor's page for that course, with its own teaching rating, difficulty and grade average. Breakdowns are collapsed under "More details".
+- Course profiles list every professor who teaches the course, side by side, with teaching rating, difficulty and average reported grade.
+- Anonymous reviews ("Anonymous Student"), editable and deletable by their authors, with a warning not to include identifying details.
+- **Optional self-reported final grade** in the review form (see [Grades and privacy](#grades-and-privacy)).
+- Student academic profile (university, campus, major, semester, start year, curriculum version) and a private list of courses taken, under **Dashboard → My next semester**.
+
+**Prepared in the database, not shown until the data exists**
+- `university_email_domains`: approved domains per university (subdomains optional). An account is marked as having a university email only after the address is **confirmed by email**; the domain alone never counts.
+- `university_auth_methods`: per-university sign-in methods, including `saml_sso` / `oidc_sso` rows that point at a Supabase SSO provider id. Email + password keeps working for everyone today.
+- `degree_programs`, `program_campuses`, `curricula` (versioned plans of study, only `is_official` ones with a source URL are used), `curriculum_courses` (semester, required/elective/concentration).
+- `course_prerequisites.relation` (prerequisite or corequisite) and `curriculum_id` (rules for one plan only).
+- `teaching_assignments`: who taught which course, in which term, campus and section. The site never assumes a professor still teaches a course because they once did. Reviews stay attached to the timeless `professor_courses` link, so they survive changes in assignments.
+- `my_next_semester()`: next-semester planning from the student's **official** curriculum, excluding courses they passed or are taking, and flagging missing verified prerequisites. Without an official curriculum the dashboard shows an empty state instead of guessing. Suggestions are planning help, not enrollment or eligibility decisions.
+
+## Grades and privacy
+
+- Grades live in `reported_grades`, separate from the review text, one per review. The review's unique key (student, professor, course, term) also prevents duplicate grades.
+- Nobody can read individual grades through the API except the student who reported them (to edit it). Moderators cannot either.
+- Grades are validated against the university's scale (`universities.grade_scale_min`, `grade_scale_max`, `grade_scale_step`; 0–100 by default).
+- The public reads only `professor_course_grade_summary` and `course_grade_summary`. An average stays hidden until **at least 5 grades** exist for that group. Course averages are built only from professor groups that meet the minimum, so comparing them cannot reveal a small group. Averages are rounded, computed live, and count only grades of published reviews.
+- The UI always shows how many grades an average is based on and says they are self-reported, affected by voluntary-response bias, and not a measure of teaching quality.
 
 ## Architecture
 
@@ -145,7 +171,7 @@ Put the printed API URL and publishable (or anon) key in `.env.local`.
    - paste each file from `supabase/migrations/` into the SQL editor, oldest first.
 3. **Seed data (development or staging only).** `supabase/seed.sql` creates the real Tec university with its campuses, departments and terms, plus **clearly fictional** professors (with surnames such as "Ficticia" and "Ejemplo"), `DEMO-` courses and demo reviews from accounts that cannot log in. **Do not run it in production.** For production, run only the first block of `seed.sql` (university, campuses, departments, terms) or create those in the admin UI, then import real data.
 4. **Auth settings** (Authentication → URL configuration and providers):
-   - Site URL: your production URL, for example `https://unirate.example.com`.
+   - Site URL: your production URL, for example `https://kurso.example.com`.
    - Redirect URLs: `https://<your-domain>/auth/callback`, `https://<your-domain>/auth/confirm`, and the same for `http://localhost:3000` during development.
    - Email provider: enable **Confirm email**. Minimum password length 8.
    - Recommended: configure custom SMTP (the built-in sender is heavily rate-limited) and turn on leaked-password protection.
@@ -193,6 +219,9 @@ Moderation workflow:
 | Professors | `first_name*`, `last_name*`, `honorific`, `department_slug`, `campus_slug`, `slug` | A row with an explicit `slug` updates that professor. Without one, a new professor is created, and a name collision is reported instead of silently merging two people. |
 | Courses | `code*`, `name*`, `name_language` (`es`/`en`), `department_slug`, `credits`, `description` | Updates by course code within the university. |
 | Assignments | `professor_slug*`, `course_code*`, `campus_slug` | Duplicates are ignored. |
+| Term sections | `professor_slug*`, `course_code*`, `term*` (e.g. `2026-fall`), `campus_slug`, `section`, `source` (`official`/`admin`/`student_report`) | Duplicates are ignored. Also creates the professor–course link. |
+| Majors | `name*`, `slug`, `code`, `name_en`, `department_slug`, `campus_slugs` (`;`-separated) | Updates by slug. |
+| Curricula | `program_slug*`, `version*`, `course_code*`, `semester`, `requirement` (`required`/`elective`/`concentration`), `group`, `source_url` | Creates the curriculum version if needed. A `source_url` marks it official; only official curricula drive recommendations. |
 
 Only import real, verifiable data from public sources (official directory, schedules, curriculum). Official prerequisites are added per course in the admin, and marking one as verified requires a source URL.
 
@@ -202,7 +231,7 @@ Only import real, verifiable data from public sources (official directory, sched
 - **Database tests:** `supabase/tests/01_security_and_reviews.sql` has 59 assertions run inside a rolled-back transaction. They cover RLS and privacy (no author IDs leak through views), uniqueness, contact-info rejection, flagging, rate limits, voting rules, automatic queueing after reports, moderator-only actions, audit logging, the append-only log, merges, account deletion and fuzzy or accent-insensitive search.
   `scripts/test-db.sh` creates a scratch database and installs a small shim for Supabase's `auth` schema and roles (`supabase/tests/local_supabase_shim.sql`). It then applies the migrations, the seed and the tests. It needs PostgreSQL 15+ with the `pg_trgm` and `unaccent` extensions, run as a superuser:
   ```bash
-  PGHOST=localhost PGUSER=postgres ./scripts/test-db.sh   # recreates the unirate_test database each run
+  PGHOST=localhost PGUSER=postgres ./scripts/test-db.sh   # recreates the kurso_test database each run
   ```
 
 ## Security model
@@ -236,4 +265,4 @@ Only import real, verifiable data from public sources (official directory, sched
 | Real catalog data | Admin → CSV import | The seed has only fictional demo professors and courses |
 | Production URL | `NEXT_PUBLIC_SITE_URL` | Correct links in auth emails |
 
-UniRate is an independent project and is not affiliated with, sponsored or endorsed by Tecnológico de Monterrey or any other university.
+Kurso is an independent project and is not affiliated with, sponsored or endorsed by Tecnológico de Monterrey or any other university.

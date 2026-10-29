@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageSquareText, Pencil } from "lucide-react";
+import { ArrowRight, GraduationCap, MessageSquareText, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/common/empty-state";
@@ -13,7 +13,7 @@ const statusVariant = { published: "success", under_review: "warning", hidden: "
 export default async function DashboardReviewsPage() {
   const [{ t, locale }, user, supabase] = await Promise.all([getI18n(), getSessionUser(), getSupabase()]);
   if (!user || !supabase) return null;
-  const [{ data: reviews }, { data: suggestions }] = await Promise.all([
+  const [{ data: reviews }, { data: suggestions }, { data: academic }] = await Promise.all([
     supabase
       .from("reviews")
       .select(
@@ -22,10 +22,26 @@ export default async function DashboardReviewsPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
     supabase.from("suggestions").select("id, kind, status, payload, created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+    supabase.from("profiles").select("program_id, current_semester").eq("id", user.id).maybeSingle(),
   ]);
+  // Errors (for example an older schema) leave `academic` null and hide the prompt.
+  const needsAcademicProfile = academic !== null && (!academic.program_id || !academic.current_semester);
 
   return (
     <div className="grid gap-10">
+      {needsAcademicProfile && (
+        <Link
+          href="/dashboard/plan"
+          className="group flex items-center gap-3 rounded-2xl border bg-card px-5 py-4 text-sm transition-colors hover:border-foreground/20"
+        >
+          <GraduationCap className="size-5 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1">
+            <span className="font-medium">{t.plan.profileTitle}</span>
+            <span className="block text-muted-foreground">{t.plan.profileBody}</span>
+          </span>
+          <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      )}
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t.dashboard.myReviews}</h2>

@@ -26,6 +26,8 @@ export default async function EditReviewPage({ params }: PageProps<"/reviews/[id
     .eq("user_id", user.id)
     .maybeSingle();
   if (!review) notFound();
+  // Only the author can read their own grade row.
+  const { data: grade } = await supabase.from("reported_grades").select("grade").eq("review_id", review.id).maybeSingle();
 
   const ps = review.professor_review_scores;
   const cs = review.course_review_scores;
@@ -53,6 +55,7 @@ export default async function EditReviewPage({ params }: PageProps<"/reviews/[id
     tags: review.tags as ReviewTag[],
     body: review.body,
     advice: review.advice ?? "",
+    final_grade: grade?.grade != null ? String(Number(grade.grade)) : "",
     professor_scores: {
       clarity: ps?.clarity ?? null,
       attitude: ps?.attitude ?? null,
@@ -91,6 +94,7 @@ export default async function EditReviewPage({ params }: PageProps<"/reviews/[id
           terms={terms}
           initialValues={values}
           initialCombos={combos}
+          gradeScale={options.gradeScale}
           lockedLabel={`${professor?.display_name ?? ""} · ${course?.code ?? ""} ${course?.name ?? ""} · ${term?.label ?? ""}`}
         />
       </div>

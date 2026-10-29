@@ -6,7 +6,7 @@ type LegalDoc = { intro: string; updated: string; sections: Section[] };
 const guidelines: Record<Locale, LegalDoc> = {
   es: {
     intro:
-      "UniRate existe para ayudar a estudiantes a tomar mejores decisiones académicas. Las reseñas deben ser honestas, útiles y respetuosas. Las cuentas anónimas para otros estudiantes siguen sujetas a moderación.",
+      "Kurso existe para ayudar a estudiantes a tomar mejores decisiones académicas. Las reseñas deben ser honestas, útiles y respetuosas. Las cuentas anónimas para otros estudiantes siguen sujetas a moderación.",
     updated: "Última actualización: octubre de 2026",
     sections: [
       {
@@ -55,7 +55,7 @@ const guidelines: Record<Locale, LegalDoc> = {
   },
   en: {
     intro:
-      "UniRate exists to help students make better academic decisions. Reviews must be honest, useful and respectful. Accounts that are anonymous to other students are still subject to moderation.",
+      "Kurso exists to help students make better academic decisions. Reviews must be honest, useful and respectful. Accounts that are anonymous to other students are still subject to moderation.",
     updated: "Last updated: October 2026",
     sections: [
       {
@@ -107,7 +107,7 @@ const guidelines: Record<Locale, LegalDoc> = {
 const privacy: Record<Locale, LegalDoc> = {
   es: {
     intro:
-      "Este aviso explica qué datos recopila UniRate, para qué los usa y qué control tienes sobre ellos. Plantilla para revisión legal antes de un lanzamiento público.",
+      "Este aviso explica qué datos recopila Kurso, para qué los usa y qué control tienes sobre ellos. Plantilla para revisión legal antes de un lanzamiento público.",
     updated: "Última actualización: octubre de 2026",
     sections: [
       {
@@ -115,6 +115,7 @@ const privacy: Record<Locale, LegalDoc> = {
         body: [
           "Cuenta: correo electrónico, contraseña (cifrada por nuestro proveedor de autenticación) y, opcionalmente, un nombre visible solo para ti y moderación.",
           "Contenido: tus reseñas, votos, reportes, sugerencias y elementos guardados.",
+          "Opcional: tu perfil académico (universidad, campus, carrera, semestre), las materias que marcas como cursadas y la calificación final que decidas reportar.",
           "Datos técnicos mínimos para seguridad y prevención de abuso (por ejemplo, registros de frecuencia de acciones).",
         ],
       },
@@ -123,6 +124,7 @@ const privacy: Record<Locale, LegalDoc> = {
         body: [
           "El texto y las calificaciones de tus reseñas publicadas, el semestre, la modalidad y si tu cuenta tiene un correo universitario verificado.",
           "Nunca mostramos tu nombre, correo ni identificador de cuenta a otros estudiantes, ni los incluimos en respuestas de la API pública.",
+          "Tu calificación reportada nunca se muestra junto a tu reseña. Solo se publica como parte de un promedio de al menos 5 calificaciones. Tu perfil académico y tus materias cursadas son privados.",
         ],
       },
       {
@@ -142,14 +144,14 @@ const privacy: Record<Locale, LegalDoc> = {
       {
         title: "Proveedores",
         body: [
-          "Usamos Supabase para base de datos y autenticación y Vercel para alojamiento. No vendemos tus datos ni mostramos publicidad basada en ellos.",
+          "Usamos Supabase para base de datos y autenticación y Netlify para alojamiento. No vendemos tus datos ni mostramos publicidad basada en ellos.",
         ],
       },
     ],
   },
   en: {
     intro:
-      "This notice explains what data UniRate collects, why, and what control you have over it. It is a template to be reviewed by counsel before a public launch.",
+      "This notice explains what data Kurso collects, why, and what control you have over it. It is a template to be reviewed by counsel before a public launch.",
     updated: "Last updated: October 2026",
     sections: [
       {
@@ -157,6 +159,7 @@ const privacy: Record<Locale, LegalDoc> = {
         body: [
           "Account: email, password (hashed by our authentication provider) and, optionally, a display name visible only to you and moderators.",
           "Content: your reviews, votes, reports, suggestions and saved items.",
+          "Optional: your academic profile (university, campus, major, semester), the courses you mark as taken and any final grade you choose to report.",
           "Minimal technical data for security and abuse prevention (for example, action-frequency logs).",
         ],
       },
@@ -165,6 +168,7 @@ const privacy: Record<Locale, LegalDoc> = {
         body: [
           "The text and ratings of your published reviews, the semester, the format, and whether your account has a verified university email.",
           "We never show your name, email or account identifier to other students, nor include them in public API responses.",
+          "A reported grade is never shown with your review. It is only published as part of an average of at least 5 grades. Your academic profile and course history are private.",
         ],
       },
       {
@@ -184,7 +188,7 @@ const privacy: Record<Locale, LegalDoc> = {
       {
         title: "Processors",
         body: [
-          "We use Supabase for database and authentication and Vercel for hosting. We don't sell your data or show ads based on it.",
+          "We use Supabase for database and authentication and Netlify for hosting. We don't sell your data or show ads based on it.",
         ],
       },
     ],

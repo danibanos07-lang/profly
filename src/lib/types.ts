@@ -68,3 +68,10 @@ export type SuggestItem = {
   rating: number | null;
   review_count: number;
 };
+
+export type CourseTaught = { code: string; name: string; slug: string };
+
+/** professor_directory.courses_taught, tolerant of databases that predate the column. */
+export function coursesTaught(professor: { courses_taught?: unknown }): CourseTaught[] {
+  return Array.isArray(professor.courses_taught) ? (professor.courses_taught as CourseTaught[]) : [];
+}

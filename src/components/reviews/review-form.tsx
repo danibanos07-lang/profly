@@ -3,7 +3,7 @@
 import { useId, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertCircle, Check, Loader2, Lock, UserRound, X } from "lucide-react";
+import { AlertCircle, Check, Loader2, Lock, ShieldCheck, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { submitReview, updateReview } from "@/lib/actions/reviews";
 import {
   ATTENDANCE_POLICIES,
   COURSE_CATEGORIES,
+  GRADE_MIN_SAMPLE,
   HOMEWORK_FREQUENCIES,
   MAX_TAGS,
   PROFESSOR_CATEGORIES,
@@ -59,6 +60,7 @@ export type ReviewFormValues = {
   tags: ReviewTag[];
   body: string;
   advice: string;
+  final_grade: string;
   professor_scores: Record<ProfessorCategory, number | null>;
   course_scores: Record<CourseCategory, number | null>;
 };
@@ -83,6 +85,7 @@ export function emptyValues(campusId: string, termId: string): ReviewFormValues 
     tags: [],
     body: "",
     advice: "",
+    final_grade: "",
     professor_scores: Object.fromEntries(PROFESSOR_CATEGORIES.map((k) => [k, null])) as Record<ProfessorCategory, number | null>,
     course_scores: Object.fromEntries(COURSE_CATEGORIES.map((k) => [k, null])) as Record<CourseCategory, number | null>,
   };
@@ -206,6 +209,7 @@ export function ReviewForm({
   initialCombos = [],
   courseProfessors = [],
   lockedLabel,
+  gradeScale = { min: 0, max: 100, step: 1 },
 }: {
   mode: "create" | "edit";
   reviewId?: string;
@@ -219,6 +223,8 @@ export function ReviewForm({
   courseProfessors?: ComboOption[];
   /** Edit mode: "Professor · Course · Term" (cannot change). */
   lockedLabel?: string;
+  /** The university's grading scale for the optional final grade. */
+  gradeScale?: { min: number; max: number; step: number };
 }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -257,6 +263,7 @@ export function ReviewForm({
       tooShort: format(t.reviewForm.bodyHelp, { min: REVIEW_BODY_MIN }),
       personalInfo: t.errors.personalInfo,
       tooLong: t.errors.invalidInput,
+      grade: format(t.grades.invalid, { min: gradeScale.min, max: gradeScale.max }),
     };
     return map[key] ?? t.errors.invalidInput;
   };
@@ -275,6 +282,11 @@ export function ReviewForm({
     if (values.weekly_hours === "") e.weekly_hours = "required";
     if (values.body.trim().length < REVIEW_BODY_MIN) e.body = "tooShort";
     if (bodyHasContact) e.body = "personalInfo";
+    if (values.final_grade.trim() !== "") {
+      const g = Number(values.final_grade);
+      const offScale = !Number.isFinite(g) || g < gradeScale.min || g > gradeScale.max || Math.abs(((g - gradeScale.min) / gradeScale.step) % 1) > 1e-9;
+      if (offScale) e.final_grade = "grade";
+    }
     return e;
   }
 
@@ -306,6 +318,7 @@ export function ReviewForm({
       tags: values.tags,
       body: values.body,
       advice: values.advice,
+      final_grade: values.final_grade.trim() === "" ? null : Number(values.final_grade),
       professor_scores: values.professor_scores as Record<ProfessorCategory, number>,
       course_scores: values.course_scores as Record<CourseCategory, number>,
       accepts_guidelines: true,
@@ -632,6 +645,10 @@ export function ReviewForm({
       </Section>
 
       <Section step={5} title={t.reviewForm.stepWrite}>
+        <p className="flex items-start gap-2 rounded-xl bg-subtle px-3.5 py-3 text-sm text-muted-foreground">
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-foreground" />
+          {t.reviewForm.anonymityWarning}
+        </p>
         <div className="grid gap-2">
           <Label htmlFor="rf-body">{t.reviewForm.body}</Label>
           <Textarea
@@ -665,6 +682,33 @@ export function ReviewForm({
             onChange={(e) => set("advice", e.target.value)}
           />
           <FieldError message={errorText(errors.advice)} />
+        </div>
+        <div className="grid gap-2 rounded-xl border border-dashed p-4">
+          <Label htmlFor="rf-grade">
+            {t.grades.formLabel} <span className="font-normal text-muted-foreground">({t.common.optional})</span>
+          </Label>
+          <div className="flex items-center gap-3">
+            <Input
+              id="rf-grade"
+              type="number"
+              inputMode="decimal"
+              min={gradeScale.min}
+              max={gradeScale.max}
+              step={gradeScale.step}
+              placeholder={t.grades.formPlaceholder}
+              value={values.final_grade}
+              aria-invalid={Boolean(errors.final_grade)}
+              aria-describedby="rf-grade-help"
+              className="w-32"
+              onChange={(e) => set("final_grade", e.target.value)}
+            />
+            <span className="text-xs text-muted-foreground">{format(t.grades.scale, { min: gradeScale.min, max: gradeScale.max })}</span>
+          </div>
+          <p id="rf-grade-help" className="flex items-start gap-1.5 text-xs text-muted-foreground">
+            <Lock className="mt-0.5 size-3 shrink-0" />
+            {format(t.grades.formHint, { min: GRADE_MIN_SAMPLE })}
+          </p>
+          <FieldError message={errorText(errors.final_grade)} />
         </div>
         {mode === "create" && (
           <label className="flex items-start gap-3 text-sm">

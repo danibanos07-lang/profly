@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reviewSchema, signupSchema } from "./validation";
+import { academicProfileSchema, reviewSchema, signupSchema } from "./validation";
 
 const valid = {
   professor_course_id: "11111111-1111-4111-8111-111111111111",
@@ -51,5 +51,27 @@ describe("signupSchema", () => {
   it("rejects weak passwords", () => {
     const result = signupSchema.safeParse({ email: "a@tec.mx", password: "short", accepts_terms: "on" });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("final grade", () => {
+  it("is optional and defaults to null", () => {
+    expect(reviewSchema.parse(valid).final_grade).toBeNull();
+  });
+
+  it("accepts a number and rejects negatives", () => {
+    expect(reviewSchema.parse({ ...valid, final_grade: 85 }).final_grade).toBe(85);
+    expect(reviewSchema.safeParse({ ...valid, final_grade: -1 }).success).toBe(false);
+  });
+});
+
+describe("academicProfileSchema", () => {
+  it("accepts a partial profile", () => {
+    const result = academicProfileSchema.parse({ university_id: "11111111-1111-4111-8111-111111111111", current_semester: 2 });
+    expect(result).toMatchObject({ current_semester: 2, program_id: null, start_year: null });
+  });
+
+  it("rejects an impossible semester", () => {
+    expect(academicProfileSchema.safeParse({ current_semester: 0 }).success).toBe(false);
   });
 });
