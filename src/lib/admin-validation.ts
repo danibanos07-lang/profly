@@ -163,7 +163,7 @@ export const mergeSchema = z
 // CSV import
 // ---------------------------------------------------------------------------
 
-export const IMPORT_KINDS = ["professors", "courses", "assignments"] as const;
+export const IMPORT_KINDS = ["professors", "courses", "assignments", "teaching", "programs", "curriculum"] as const;
 export type ImportKind = (typeof IMPORT_KINDS)[number];
 export const IMPORT_MAX_ROWS = 2000;
 
@@ -188,6 +188,31 @@ export const IMPORT_COLUMNS: Record<ImportKind, { name: string; required: boolea
     { name: "professor_slug", required: true },
     { name: "course_code", required: true },
     { name: "campus_slug", required: false },
+  ],
+  teaching: [
+    { name: "professor_slug", required: true },
+    { name: "course_code", required: true },
+    { name: "term", required: true },
+    { name: "campus_slug", required: false },
+    { name: "section", required: false },
+    { name: "source", required: false },
+  ],
+  programs: [
+    { name: "name", required: true },
+    { name: "slug", required: false },
+    { name: "code", required: false },
+    { name: "name_en", required: false },
+    { name: "department_slug", required: false },
+    { name: "campus_slugs", required: false },
+  ],
+  curriculum: [
+    { name: "program_slug", required: true },
+    { name: "version", required: true },
+    { name: "course_code", required: true },
+    { name: "semester", required: false },
+    { name: "requirement", required: false },
+    { name: "group", required: false },
+    { name: "source_url", required: false },
   ],
 };
 
@@ -236,6 +261,79 @@ export const importRowSchemas = {
     professor_slug: z.string().trim().toLowerCase().min(1).max(80),
     course_code: z.string().trim().toUpperCase().min(2).max(24),
     campus_slug: csvText(80),
+  }),
+  teaching: z.object({
+    professor_slug: z.string().trim().toLowerCase().min(1).max(80),
+    course_code: z.string().trim().toUpperCase().min(2).max(24),
+    // Academic term as YEAR-SEASON, e.g. 2026-fall.
+    term: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(/^(20\d{2})-(spring|summer|fall|winter)$/),
+    campus_slug: csvText(80),
+    section: csvText(24),
+    source: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .optional()
+      .transform((v) => v || "official")
+      .pipe(z.enum(["official", "admin", "student_report"])),
+  }),
+  programs: z.object({
+    name: z.string().trim().min(2).max(200),
+    slug: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .regex(/^([a-z0-9]+(-[a-z0-9]+)*)?$/)
+      .max(80)
+      .optional()
+      .transform((v) => v || undefined),
+    code: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^([A-Za-z0-9][A-Za-z0-9 ._-]{0,23})?$/)
+      .optional()
+      .transform((v) => v || undefined),
+    name_en: csvText(200),
+    department_slug: csvText(80),
+    // Semicolon-separated campus slugs where the program is offered.
+    campus_slugs: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .optional()
+      .transform((v) => (v ? v.split(";").map((x) => x.trim()).filter(Boolean) : [])),
+  }),
+  curriculum: z.object({
+    program_slug: z.string().trim().toLowerCase().min(1).max(80),
+    version: z.string().trim().min(1).max(40),
+    course_code: z.string().trim().toUpperCase().min(2).max(24),
+    semester: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => (v ? Number(v) : undefined))
+      .pipe(z.number().int().min(1).max(20).optional()),
+    requirement: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .optional()
+      .transform((v) => v || "required")
+      .pipe(z.enum(["required", "elective", "concentration"])),
+    group: csvText(120),
+    // A source URL marks the curriculum as official. Without one it is stored
+    // but never used for recommendations.
+    source_url: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => v || undefined)
+      .pipe(z.url().max(500).optional()),
   }),
 } satisfies Record<ImportKind, z.ZodType>;
 

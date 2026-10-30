@@ -18,6 +18,7 @@ import {
   termFormSchema,
   universityFormSchema,
   validateImportRows,
+  type ImportRow,
   type ImportKind,
 } from "@/lib/admin-validation";
 import { slugify } from "@/lib/format";
@@ -473,6 +474,13 @@ export async function importCsv(_prev: AdminState, formData: FormData): Promise<
     }
   }
 
+  if (kind === "teaching" || kind === "programs" || kind === "curriculum") {
+    await importAcademic(ctx.supabase, kind, valid, universityId, dryRun, summary, campusBySlug, departmentBySlug);
+    errors.sort((a, b) => a.line - b.line);
+    if (!dryRun) revalidatePath("/", "layout");
+    return { ok: true, message: "saved", at: Date.now(), import: summary };
+  }
+
   summary.valid = inserts.length + updates.length;
   if (dryRun) {
     errors.sort((a, b) => a.line - b.line);
@@ -514,4 +522,143 @@ export async function importCsv(_prev: AdminState, formData: FormData): Promise<
   errors.sort((a, b) => a.line - b.line);
   revalidatePath("/", "layout");
   return { ok: true, message: "saved", at: Date.now(), import: summary };
+}
+
+type AcademicKind = "teaching" | "programs" | "curriculum";
+
+/**
+ * Imports term assignments, degree programs and curricula. Rows are matched
+ * on natural keys (professor slug, course code, program slug, curriculum
+ * version), so re-running the same file is safe.
+ */
+async function importAcademic(
+  db: NonNullable<ServerSupabase>,
+  kind: AcademicKind,
+  valid: { line: number; row: unknown }[],
+  universityId: string,
+  dryRun: boolean,
+  summary: ImportSummary,
+  campusBySlug: Map<string, string>,
+  departmentBySlug: Map<string, string>,
+) {
+  const rowError = (line: number, message: string) => summary.errors.push({ line, message });
+  const saveRow = async (line: number, run: () => PromiseLike<{ error: { message: string; code?: string } | null }>) => {
+    summary.valid += 1;
+    if (dryRun) return;
+    const { error } = await run();
+    if (error) rowError(line, error.code === "23505" ? "duplicate" : error.message);
+    else summary.saved += 1;
+  };
+
+  if (kind === "teaching") {
+    const rows = valid as { line: number; row: ImportRow<"teaching"> }[];
+    const [professors, courses, terms] = await Promise.all([
+      db.from("professors").select("id, slug").eq("university_id", universityId).in("slug", rows.map(({ row }) => row.professor_slug)),
+      db.from("courses").select("id, code").eq("university_id", universityId).in("code", rows.map(({ row }) => row.course_code)),
+      db.from("academic_terms").select("id, year, season").eq("university_id", universityId),
+    ]);
+    const professorBySlug = new Map((professors.data ?? []).map((p) => [p.slug, p.id]));
+    const courseByCode = new Map((courses.data ?? []).map((c) => [c.code.toUpperCase(), c.id]));
+    const termByKey = new Map((terms.data ?? []).map((t) => [`${t.year}-${t.season}`, t.id]));
+    for (const { line, row } of rows) {
+      const professorId = professorBySlug.get(row.professor_slug);
+      const courseId = courseByCode.get(row.course_code);
+      const termId = termByKey.get(row.term);
+      const campusId = row.campus_slug ? campusBySlug.get(row.campus_slug) : null;
+      if (!professorId) rowError(line, "professor_slug: unknown");
+      else if (!courseId) rowError(line, "course_code: unknown");
+      else if (!termId) rowError(line, "term: unknown, create the term first");
+      else if (campusId === undefined) rowError(line, "campus_slug: unknown");
+      else
+        await saveRow(line, () =>
+          db.from("teaching_assignments").upsert(
+            { professor_id: professorId, course_id: courseId, term_id: termId, campus_id: campusId, section_code: row.section ?? null, source: row.source },
+            { onConflict: "professor_id,course_id,term_id,campus_id,section_code", ignoreDuplicates: true },
+          ),
+        );
+    }
+  }
+
+  if (kind === "programs") {
+    const rows = valid as { line: number; row: ImportRow<"programs"> }[];
+    for (const { line, row } of rows) {
+      const departmentId = row.department_slug ? departmentBySlug.get(row.department_slug) : null;
+      if (departmentId === undefined) {
+        rowError(line, "department_slug: unknown");
+        continue;
+      }
+      const campusIds = row.campus_slugs.map((slug) => campusBySlug.get(slug));
+      if (campusIds.some((id) => !id)) {
+        rowError(line, "campus_slugs: unknown campus");
+        continue;
+      }
+      const slug = row.slug ?? slugify(row.name);
+      await saveRow(line, async () => {
+        const { data, error } = await db
+          .from("degree_programs")
+          .upsert(
+            { university_id: universityId, slug, name: row.name, name_en: row.name_en ?? null, code: row.code ?? null, department_id: departmentId },
+            { onConflict: "university_id,slug" },
+          )
+          .select("id")
+          .single();
+        if (error || !data) return { error };
+        if (!campusIds.length) return { error: null };
+        return db
+          .from("program_campuses")
+          .upsert(campusIds.map((campus_id) => ({ program_id: data.id, campus_id: campus_id! })), { ignoreDuplicates: true });
+      });
+    }
+  }
+
+  if (kind === "curriculum") {
+    const rows = valid as { line: number; row: ImportRow<"curriculum"> }[];
+    const [programs, courses] = await Promise.all([
+      db.from("degree_programs").select("id, slug").eq("university_id", universityId).in("slug", rows.map(({ row }) => row.program_slug)),
+      db.from("courses").select("id, code").eq("university_id", universityId).in("code", rows.map(({ row }) => row.course_code)),
+    ]);
+    const programBySlug = new Map((programs.data ?? []).map((p) => [p.slug, p.id]));
+    const courseByCode = new Map((courses.data ?? []).map((c) => [c.code.toUpperCase(), c.id]));
+    const curriculumIds = new Map<string, string>();
+    for (const { line, row } of rows) {
+      const programId = programBySlug.get(row.program_slug);
+      const courseId = courseByCode.get(row.course_code);
+      if (!programId) {
+        rowError(line, "program_slug: unknown, import programs first");
+        continue;
+      }
+      if (!courseId) {
+        rowError(line, "course_code: unknown");
+        continue;
+      }
+      await saveRow(line, async () => {
+        const key = `${programId}:${row.version}`;
+        let curriculumId = curriculumIds.get(key);
+        if (!curriculumId) {
+          // Existing versions keep their official status unless this file
+          // brings a source; new versions start unofficial without one.
+          const { data: existing } = await db.from("curricula").select("id").eq("program_id", programId).eq("version_label", row.version).maybeSingle();
+          if (existing) {
+            curriculumId = existing.id;
+            if (row.source_url) await db.from("curricula").update({ source_url: row.source_url, is_official: true }).eq("id", existing.id);
+          } else {
+            const { data, error } = await db
+              .from("curricula")
+              .insert({ program_id: programId, version_label: row.version, source_url: row.source_url ?? null, is_official: Boolean(row.source_url) })
+              .select("id")
+              .single();
+            if (error || !data) return { error };
+            curriculumId = data.id;
+          }
+          curriculumIds.set(key, curriculumId);
+        }
+        return db
+          .from("curriculum_courses")
+          .upsert(
+            { curriculum_id: curriculumId, course_id: courseId, semester: row.semester ?? null, requirement: row.requirement, group_label: row.group ?? null },
+            { onConflict: "curriculum_id,course_id" },
+          );
+      });
+    }
+  }
 }

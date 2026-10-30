@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bookmark, Columns3, MessageSquareText, Settings } from "lucide-react";
+import { Bookmark, CalendarRange, Columns3, MessageSquareText, Settings } from "lucide-react";
 import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ export function DashboardNav() {
   const pathname = usePathname();
   const items = [
     { href: "/dashboard", label: t.dashboard.tabs.reviews, icon: MessageSquareText },
+    { href: "/dashboard/plan", label: t.plan.tab, icon: CalendarRange },
     { href: "/dashboard/saved", label: t.dashboard.tabs.saved, icon: Bookmark },
     { href: "/dashboard/comparisons", label: t.dashboard.tabs.comparisons, icon: Columns3 },
     { href: "/dashboard/settings", label: t.dashboard.tabs.settings, icon: Settings },

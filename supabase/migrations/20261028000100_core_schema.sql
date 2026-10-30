@@ -1,4 +1,4 @@
--- UniRate core schema
+-- Kurso core schema
 -- Universities → campuses / departments / terms → professors & courses →
 -- professor-course assignments → reviews (+ score tables) → votes / reports.
 

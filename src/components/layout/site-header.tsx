@@ -14,8 +14,8 @@ export async function SiteHeader({ showSearch = true }: { showSearch?: boolean }
   const [{ t }, user] = await Promise.all([getI18n(), getSessionUser()]);
   const isStaff = user?.role === "admin" || user?.role === "moderator";
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/70">
+      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
         <Logo />
         <nav className="hidden items-center gap-1 text-sm md:flex">
           <Link href="/search?tab=professors" className="rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
@@ -24,9 +24,6 @@ export async function SiteHeader({ showSearch = true }: { showSearch?: boolean }
           <Link href="/search?tab=courses" className="rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
             {t.nav.courses}
           </Link>
-          <Link href="/compare" className="rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-            {t.nav.compare}
-          </Link>
         </nav>
         <div className="flex flex-1 justify-end">
           {showSearch && <SearchBox className="hidden w-full max-w-xs lg:block" />}
@@ -34,7 +31,7 @@ export async function SiteHeader({ showSearch = true }: { showSearch?: boolean }
         <div className="flex items-center gap-1">
           <LocaleSwitcher />
           <ThemeToggle />
-          <Button asChild size="sm" className="ml-1 hidden sm:inline-flex">
+          <Button asChild size="sm" variant="outline" className="ml-1 hidden sm:inline-flex">
             <Link href="/reviews/new">
               <PenLine />
               {t.nav.writeReview}

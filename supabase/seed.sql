@@ -1,4 +1,4 @@
--- UniRate development seed
+-- Kurso development seed
 --
 -- Real institutional data: Tecnológico de Monterrey, its campuses and schools.
 -- EVERYTHING ELSE IS FICTIONAL: professors, courses (codes start with DEMO-),
@@ -41,6 +41,10 @@ insert into public.academic_terms (id, university_id, year, season, label, start
   ('00000000-0000-4000-a300-000000000004', '00000000-0000-4000-a000-000000000001', 2026, 'summer', 'Verano 2026', '2026-06-22', '2026-07-31'),
   ('00000000-0000-4000-a300-000000000005', '00000000-0000-4000-a000-000000000001', 2026, 'fall', 'Agosto–Diciembre 2026', '2026-08-10', '2026-12-04')
 on conflict (id) do nothing;
+
+insert into public.university_email_domains (university_id, domain)
+values ('00000000-0000-4000-a000-000000000001', 'tec.mx')
+on conflict (domain) do nothing;
 
 -- ---------------------------------------------------------------------------
 -- FICTIONAL courses (codes prefixed DEMO-, no official prerequisites claimed)
@@ -267,6 +271,39 @@ from (select id, user_id from public.reviews order by created_at desc limit 40) 
 where ('00000000-0000-4000-d000-0000000000' || lpad(u::text, 2, '0'))::uuid <> r.user_id
   and random() < 0.4
 on conflict do nothing;
+
+-- Demo degree program with an unofficial curriculum, so the academic profile
+-- form has something to pick. Unofficial curricula never produce
+-- recommendations, so "My next semester" shows its empty state.
+insert into public.degree_programs (id, university_id, department_id, slug, code, name, name_en, is_fictional) values
+  ('00000000-0000-4000-e000-000000000001', '00000000-0000-4000-a000-000000000001', '00000000-0000-4000-a200-000000000001',
+   'demo-ingenieria', 'DEMO-ING', 'Ingeniería (programa demo)', 'Engineering (demo program)', true)
+on conflict (id) do nothing;
+insert into public.program_campuses (program_id, campus_id)
+values ('00000000-0000-4000-e000-000000000001', '00000000-0000-4000-a100-000000000001')
+on conflict do nothing;
+insert into public.curricula (id, program_id, version_label, total_semesters, is_official) values
+  ('00000000-0000-4000-e100-000000000001', '00000000-0000-4000-e000-000000000001', 'Demo 2026', 8, false)
+on conflict (id) do nothing;
+insert into public.curriculum_courses (curriculum_id, course_id, semester) values
+  ('00000000-0000-4000-e100-000000000001', '00000000-0000-4000-c000-000000000001', 1),
+  ('00000000-0000-4000-e100-000000000001', '00000000-0000-4000-c000-000000000004', 1),
+  ('00000000-0000-4000-e100-000000000001', '00000000-0000-4000-c000-000000000002', 2),
+  ('00000000-0000-4000-e100-000000000001', '00000000-0000-4000-c000-000000000006', 2),
+  ('00000000-0000-4000-e100-000000000001', '00000000-0000-4000-c000-000000000005', 3),
+  ('00000000-0000-4000-e100-000000000001', '00000000-0000-4000-c000-000000000003', 3)
+on conflict do nothing;
+
+-- Demo self-reported grades (0-100) for the demo reviews, loosely tied to the
+-- reported difficulty, so grade averages have something to show.
+insert into public.reported_grades (review_id, grade)
+select r.id,
+       greatest(60, least(100, 100 - cs.difficulty * 4 - (abs(hashtext(r.id::text)) % 16)))
+from public.reviews r
+join public.course_review_scores cs on cs.review_id = r.id
+where r.user_id::text like '00000000-0000-4000-d000-%'
+  and abs(hashtext(r.id::text || 'g')) % 10 < 8
+on conflict (review_id) do nothing;
 
 -- Starter moderation vocabulary. Admins should extend this list.
 insert into public.blocked_terms (term, severity) values

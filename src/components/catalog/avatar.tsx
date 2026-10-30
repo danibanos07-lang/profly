@@ -2,12 +2,9 @@ import { cn } from "@/lib/utils";
 import { initials } from "@/lib/format";
 
 const palettes = [
-  "from-indigo-500/20 to-violet-500/20 text-indigo-700 dark:text-indigo-300",
-  "from-emerald-500/20 to-teal-500/20 text-emerald-700 dark:text-emerald-300",
-  "from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-300",
-  "from-sky-500/20 to-cyan-500/20 text-sky-700 dark:text-sky-300",
-  "from-rose-500/20 to-pink-500/20 text-rose-700 dark:text-rose-300",
-  "from-fuchsia-500/20 to-purple-500/20 text-fuchsia-700 dark:text-fuchsia-300",
+  "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+  "bg-stone-100 text-stone-700 dark:bg-stone-800 dark:text-stone-200",
+  "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
 ];
 
 function hash(value: string) {
@@ -22,7 +19,7 @@ export function InitialsAvatar({ name, className }: { name: string; className?: 
     <div
       aria-hidden
       className={cn(
-        "flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm font-semibold ring-1 ring-inset ring-black/5 dark:ring-white/10",
+        "flex size-11 shrink-0 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-inset ring-black/5 dark:ring-white/10",
         palettes[hash(name) % palettes.length],
         className,
       )}

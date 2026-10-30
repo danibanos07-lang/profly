@@ -11,5 +11,8 @@ export async function getReviewFormOptions() {
     .map((term) => ({ id: term.id, label: term.label }));
   const campuses = context.campuses.filter((c) => c.is_active).map((c) => ({ id: c.id, label: c.name }));
   const defaultCampus = context.campuses.find((c) => c.is_default && c.is_active) ?? context.campuses.find((c) => c.is_active);
-  return { context, terms, campuses, defaultCampusId: defaultCampus?.id ?? "", defaultTermId: terms[0]?.id ?? "" };
+  // Older databases lack the grade scale columns; fall back to 0-100.
+  const u = context.university as Partial<typeof context.university>;
+  const gradeScale = { min: Number(u.grade_scale_min ?? 0), max: Number(u.grade_scale_max ?? 100), step: Number(u.grade_scale_step ?? 1) };
+  return { context, terms, campuses, gradeScale, defaultCampusId: defaultCampus?.id ?? "", defaultTermId: terms[0]?.id ?? "" };
 }

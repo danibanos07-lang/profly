@@ -1,6 +1,6 @@
 # Minimal config for the Supabase CLI (`supabase start` / `supabase db reset`).
 # Hosted projects are configured in the dashboard; see README.md.
-project_id = "unirate"
+project_id = "kurso"
 
 [api]
 enabled = true

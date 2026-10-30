@@ -66,6 +66,7 @@ export default async function NewReviewPage({ searchParams }: PageProps<"/review
             initialProfessor={professor ? { id: professor.id, name: professor.display_name } : null}
             initialCombos={initialCombos}
             courseProfessors={courseProfessors}
+            gradeScale={options.gradeScale}
           />
         )}
       </div>
